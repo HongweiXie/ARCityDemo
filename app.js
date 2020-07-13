@@ -209,7 +209,7 @@ export default function App({
       rounded: true,
       trailLength,
       currentTime: time,
-
+      antialiase: true,
       shadowEnabled: false
     }),
     // new PolygonLayer({
