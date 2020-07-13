@@ -1,5 +1,6 @@
 /* global window */
-import React, {useState, useRef, useEffect, useCallback} from 'react';
+
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {render} from 'react-dom';
 import {StaticMap} from 'react-map-gl';
 import {AmbientLight, PointLight, LightingEffect} from '@deck.gl/core';
@@ -57,7 +58,6 @@ const material = {
 };
 
 const DEFAULT_THEME = {
-  // buildingColor: [74, 80, 87],
   // trailColor0: [253, 128, 93],
   // trailColor1: [23, 184, 190],
   buildingColor: [74, 80, 87],
@@ -137,7 +137,6 @@ export default function App({
                               radiusPixels = HM_PARAM.radiusPixels,
                               colorRange = COLOR_RANGE
                             }) {
-
   const [time, setTime] = useState(0);
 
   const [animation] = useState({});
@@ -148,18 +147,6 @@ export default function App({
     bearing: INITIAL_VIEW_STATE.bearing,
     pitch: INITIAL_VIEW_STATE.pitch,
   });
-  // window.addEventListener("click", handleClick);
-  // function handleClick(){
-  //   console.log('click');
-  //   setInitialViewState({
-  //     latitude: INITIAL_VIEW_STATE.latitude,
-  //     longitude: INITIAL_VIEW_STATE.longitude,
-  //     zoom: INITIAL_VIEW_STATE.zoom,
-  //     bearing: initialViewState.bearing+10,
-  //     pitch: INITIAL_VIEW_STATE.pitch,
-  //     transitionDuration: 0
-  //   });
-  // }
 
   const animate = () => {
     // setTime(t=>(console.log(t)));
@@ -185,6 +172,7 @@ export default function App({
   );
 
   const mapRef = useRef(null);
+  const deckRef =useRef(null);
   const onMapLoad = useCallback(() => {
     const map = mapRef.current.getMap();
     map.addLayer(mapboxBuildingLayer);
@@ -239,6 +227,7 @@ export default function App({
 
   return (
     <DeckGL
+      ref={deckRef}
       layers={layers}
       effects={theme.effects}
       initialViewState={initialViewState}
@@ -249,7 +238,13 @@ export default function App({
         vLatitude = viewState.latitude
         vZoom = viewState.zoom
       }}
+      // onWebGLInitialized={setGLContext}
+      // glOptions={{
+      //   /* To render vector tile polygons correctly */
+      //   stencil: true
+      // }}
     >
+      {/* {glContext && ( */}
       <StaticMap
         reuseMaps
         ref={mapRef}
@@ -258,6 +253,7 @@ export default function App({
         mapboxApiAccessToken={MAPBOX_TOKEN}
         onLoad={onMapLoad}
       />
+      {/* )} */}
     </DeckGL>
   );
 }
