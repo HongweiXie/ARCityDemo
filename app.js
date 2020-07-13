@@ -1,5 +1,5 @@
 /* global window */
-import React, {useState, useEffect} from 'react';
+import React, {useState, useRef, useEffect, useCallback} from 'react';
 import {render} from 'react-dom';
 import {StaticMap} from 'react-map-gl';
 import {AmbientLight, PointLight, LightingEffect} from '@deck.gl/core';
@@ -7,9 +7,27 @@ import DeckGL from '@deck.gl/react';
 import {PolygonLayer, ScatterplotLayer} from '@deck.gl/layers';
 import {TripsLayer} from '@deck.gl/geo-layers';
 import {HeatmapLayer} from '@deck.gl/aggregation-layers';
+import mapboxgl from 'mapbox-gl';
 
 // Set your mapbox token here
 const MAPBOX_TOKEN = process.env.MapboxAccessToken || 'pk.eyJ1Ijoic2h1b2ZhbiIsImEiOiJja2NlZ3BoOWUwODYwMnpwaGpkamx0aGJmIn0.rkJY6OYlU7c7F0rFsafapQ'; // eslint-disable-line
+
+mapboxgl.accessToken = MAPBOX_TOKEN
+
+export const mapboxBuildingLayer = {
+  id: '3d-buildings',
+  source: 'composite',
+  'source-layer': 'building',
+  filter: ['==', 'extrude', 'true'],
+  type: 'fill-extrusion',
+  zoom: 10,
+  minZoom: 1,
+  maxZoom: 25,
+  paint: {
+    'fill-extrusion-color': '#4a5057',
+    'fill-extrusion-height': ['get', 'height']
+  }
+};
 
 // Source data CSV
 const DATA_URL = {
@@ -44,7 +62,7 @@ const DEFAULT_THEME = {
   // trailColor1: [23, 184, 190],
   buildingColor: [74, 80, 87],
   trailColor0: [253, 128, 93],
-  trailColor1: [23, 184, 190],
+  trailColor1: [23, 240, 110],
   material,
   effects: [lightingEffect],
   groundColor: [0, 0, 0, 0]
@@ -57,12 +75,12 @@ const TRIP_PARAM = {
 
 // params for heatmap
 const COLOR_RANGE = [
-  [1, 152, 189, 100],
-  [73, 227, 206, 100],
-  [216, 254, 181, 100],
-  [254, 237, 177, 100],
-  [254, 173, 84, 100],
-  [209, 55, 78, 100]
+  [1, 152, 189, 80],
+  [73, 227, 206, 80],
+  [216, 254, 181, 80],
+  [254, 237, 177, 80],
+  [254, 173, 84, 80],
+  [209, 55, 78, 80]
   // [255, 255, 178, 100],
   // [254, 217, 118, 100],
   // [254, 178, 76, 100],
@@ -83,8 +101,8 @@ const INITIAL_VIEW_STATE = {
   zoom: 13,
   minZoom: 1,
   maxZoom: 25,
-  pitch: 45,
-  bearing: 0
+  pitch: 65,
+  bearing: 20
 };
 
 const landCover = [[[-74.0, 40.7], [-74.02, 40.7], [-74.02, 40.72], [-74.0, 40.72]]];
@@ -166,6 +184,12 @@ export default function App({
     [animation]
   );
 
+  const mapRef = useRef(null);
+  const onMapLoad = useCallback(() => {
+    const map = mapRef.current.getMap();
+    map.addLayer(mapboxBuildingLayer);
+  }, []);
+
   const layers = [
     new HeatmapLayer({
       data,
@@ -200,17 +224,17 @@ export default function App({
 
       shadowEnabled: false
     }),
-    new PolygonLayer({
-      id: 'buildings',
-      data: buildings,
-      extruded: true,
-      wireframe: false,
-      opacity: 0.5,
-      getPolygon: f => f.polygon,
-      getElevation: f => f.height,
-      getFillColor: theme.buildingColor,
-      material: theme.material
-    })
+    // new PolygonLayer({
+    //   id: 'buildings',
+    //   data: buildings,
+    //   extruded: true,
+    //   wireframe: false,
+    //   opacity: 0.5,
+    //   getPolygon: f => f.polygon,
+    //   getElevation: f => f.height,
+    //   getFillColor: theme.buildingColor,
+    //   material: theme.material
+    // }),
   ];
 
   return (
@@ -224,14 +248,15 @@ export default function App({
         vLongitude = viewState.longitude
         vLatitude = viewState.latitude
         vZoom = viewState.zoom
-
       }}
     >
       <StaticMap
         reuseMaps
+        ref={mapRef}
         mapStyle={mapStyle}
         preventStyleDiffing={true}
         mapboxApiAccessToken={MAPBOX_TOKEN}
+        onLoad={onMapLoad}
       />
     </DeckGL>
   );
