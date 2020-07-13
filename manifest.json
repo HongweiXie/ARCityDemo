@@ -1,0 +1,14 @@
+{
+    "short_name": "ARCity",
+    "name": "ARCity",
+    "icons": [
+      {
+        "src": "imgs/icon.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      }
+    ],
+    "start_url": "localhost:8888/basic/index.html",
+    "display": "fullscreen",
+    "orientation": "landscape"
+  }
