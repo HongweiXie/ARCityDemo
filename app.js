@@ -6,15 +6,16 @@ import {AmbientLight, PointLight, LightingEffect} from '@deck.gl/core';
 import DeckGL from '@deck.gl/react';
 import {PolygonLayer, ScatterplotLayer} from '@deck.gl/layers';
 import {TripsLayer} from '@deck.gl/geo-layers';
+import {HeatmapLayer} from '@deck.gl/aggregation-layers';
 
 // Set your mapbox token here
 const MAPBOX_TOKEN = process.env.MapboxAccessToken || 'pk.eyJ1Ijoic2h1b2ZhbiIsImEiOiJja2NlZ3BoOWUwODYwMnpwaGpkamx0aGJmIn0.rkJY6OYlU7c7F0rFsafapQ'; // eslint-disable-line
 
 // Source data CSV
 const DATA_URL = {
-  BUILDINGS:
-    'res/buildings.json', // eslint-disable-line
-  TRIPS: 'res/trips-v7.json' // eslint-disable-line
+  BUILDINGS: 'res/buildings.json', // eslint-disable-line
+  TRIPS: 'res/trips-v7.json', // eslint-disable-line
+  PICK_HEATMAPS: 'res/uber-pickup-locations.json'
 };
 
 const ambientLight = new AmbientLight({
@@ -38,17 +39,50 @@ const material = {
 };
 
 const DEFAULT_THEME = {
+  // buildingColor: [74, 80, 87],
+  // trailColor0: [253, 128, 93],
+  // trailColor1: [23, 184, 190],
   buildingColor: [74, 80, 87],
   trailColor0: [253, 128, 93],
   trailColor1: [23, 184, 190],
   material,
-  effects: [lightingEffect]
+  effects: [lightingEffect],
+  groundColor: [0, 0, 0, 0]
 };
+
+const TRIP_PARAM = {
+  trailLength: 180,
+
+}
+
+// params for heatmap
+const COLOR_RANGE = [
+  [1, 152, 189, 100],
+  [73, 227, 206, 100],
+  [216, 254, 181, 100],
+  [254, 237, 177, 100],
+  [254, 173, 84, 100],
+  [209, 55, 78, 100]
+  // [255, 255, 178, 100],
+  // [254, 217, 118, 100],
+  // [254, 178, 76, 100],
+  // [253, 141, 60, 100],
+  // [240, 59, 32, 100],
+  // [189, 0, 38, 100]
+];
+
+const HM_PARAM = {
+  intensity: 1,
+  threshold: 0.03,
+  radiusPixels: 50
+}
 
 const INITIAL_VIEW_STATE = {
   longitude: -74,
   latitude: 40.72,
   zoom: 13,
+  minZoom: 1,
+  maxZoom: 25,
   pitch: 45,
   bearing: 0
 };
@@ -72,15 +106,20 @@ window.addEventListener("deviceorientation", handleOrientation, true);
   }
 
 export default function App({
-  buildings = DATA_URL.BUILDINGS,
-  trips = DATA_URL.TRIPS,
-  trailLength = 180,
-  // initialViewState = INITIAL_VIEW_STATE,
-  mapStyle = 'mapbox://styles/mapbox/dark-v9',
-  theme = DEFAULT_THEME,
-  loopLength = 1800, // unit corresponds to the timestamp in source data
-  animationSpeed = 1
-}) {
+                              data=DATA_URL.PICK_HEATMAPS,
+                              buildings = DATA_URL.BUILDINGS,
+                              trips = DATA_URL.TRIPS,
+                              mapStyle = 'mapbox://styles/mapbox/dark-v9',
+                              trailLength = TRIP_PARAM.trailLength,
+                              theme = DEFAULT_THEME,
+                              loopLength = 1800, // unit corresponds to the timestamp in source data
+                              animationSpeed = 1,
+                              intensity = HM_PARAM.intensity,
+                              threshold = HM_PARAM.threshold,
+                              radiusPixels = HM_PARAM.radiusPixels,
+                              colorRange = COLOR_RANGE
+                            }) {
+
   const [time, setTime] = useState(0);
 
   const [animation] = useState({});
@@ -128,13 +167,24 @@ export default function App({
   );
 
   const layers = [
+    new HeatmapLayer({
+      data,
+      id: 'heatmp-layer',
+      pickable: true,
+      getPosition: d => [d[0], d[1]],
+      getWeight: d => d[2],
+      radiusPixels,
+      intensity,
+      threshold,
+      colorRange
+    }),
     // This is only needed when using shadow effects
     new PolygonLayer({
       id: 'ground',
       data: landCover,
       getPolygon: f => f,
       stroked: false,
-      getFillColor: [0, 0, 0, 0]
+      getFillColor: DEFAULT_THEME.groundColor
     }),
     new TripsLayer({
       id: 'trips',
